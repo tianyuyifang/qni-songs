@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ page_title }}</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px;
+            background-color: #fafafa;
+            font-size: 14px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        h1 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .back-button {
+            padding: 5px 12px;
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+        .clear-button {
+            padding: 5px 12px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            text-decoration: none;
+            font-size: 0.9em;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .songs-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .song {
+            background: white;
+            padding: 12px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            break-inside: avoid;
+            position: relative;
+        }
+        .song.played {
+            opacity: 0.7;
+            background-color: #f0f0f0;
+        }
+        .song-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .song-title {
+            color: #3498db;
+            margin: 0;
+            font-size: 1.1em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-grow: 1;
+        }
+        .song-artist {
+            color: #7f8c8d;
+            margin: 0 0 8px 0;
+            font-style: italic;
+            font-size: 0.85em;
+        }
+
+        .song-group {
+            margin-bottom: 25px;
+            grid-column: 1 / -1;
+            break-inside: avoid;
+        }
+        .group-title {
+            color: #2c3e50;
+            font-size: 1.3em;
+            margin: 0 0 10px 0;
+            padding: 8px 12px;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .group-songs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        audio {
+            width: 100%;
+            margin: 8px 0;
+            height: 27px;
+        }
+        .lyrics {
+            white-space: pre-line;
+            line-height: 1.4;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 3px;
+            font-size: 0.85em;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .played-checkbox {
+            width: 18px;
+            height: 18px;
+            margin-left: 8px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .no-results {
+            text-align: center;
+            padding: 30px;
+            color: #7f8c8d;
+            font-size: 0.95em;
+            grid-column: 1 / -1;
+        }
+        @media (max-width: 900px) {
+            .songs-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 600px) {
+            .songs-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ page_title }}</h1>
+        <div>
+            <a href="/" class="back-button">← 返回搜索</a>
+            <button class="clear-button" onclick="clearAllPlayed()">清除标记</button>
+        </div>
+    </div>
+
+    <div class="songs-container">
+        {% if songs %}
+            {# Group songs by their type attribute #}
+            {% set grouped_songs = {} %}
+            {% for song in songs %}
+                {% if song.type not in grouped_songs %}
+                    {% set _ = grouped_songs.update({song.type: []}) %}
+                {% endif %}
+                {% set _ = grouped_songs[song.type].append(song) %}
+            {% endfor %}
+
+            {# Display each group #}
+            {% for group_name, group_songs in grouped_songs.items() %}
+            <div class="song-group">
+                <h2 class="group-title">{{ group_name }}</h2>
+                <div class="group-songs">
+                    {% for song in group_songs %}
+                    <div class="song" id="song-{{ song.id }}">
+                        <div class="song-header" onclick="togglePlayed({{ song.id }})">
+                            <h2 class="song-title">{{ song.title }}</h2>
+                            <input type="checkbox"
+                                   class="played-checkbox"
+                                   id="checkbox-{{ song.id }}"
+                                   onclick="event.stopPropagation(); togglePlayed({{ song.id }})">
+                        </div>
+                        <p class="song-artist">{{ song.artist }}</p>
+
+                        <audio controls
+                               id="audio-{{ song.id }}">
+                            <source src="{{ url_for('static', filename='audio/' + song.audio_file) }}" type="audio/mpeg">
+                        </audio>
+
+                        <div class="lyrics">
+                            {{ song.lyrics }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-results">
+                <h3>没有找到歌曲</h3>
+                <p>尝试搜索其他歌手</p>
+                <a href="/" class="back-button">← 返回搜索</a>
+            </div>
+        {% endif %}
+    </div>
+
+<script>
+    // Set all audio players to 10% volume when loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Track currently playing audio element
+        let currentlyPlayingAudio = null;
+
+        {% for song in songs %}
+            // Volume control
+            const audio{{ song.id }} = document.getElementById("audio-{{ song.id }}");
+            audio{{ song.id }}.volume = 0.05; // 10% volume
+
+            // Play/pause control
+            audio{{ song.id }}.addEventListener('play', function() {
+                // Pause any currently playing audio
+                if (currentlyPlayingAudio && currentlyPlayingAudio !== this) {
+                    currentlyPlayingAudio.pause();
+                }
+                // Set this as the currently playing audio
+                currentlyPlayingAudio = this;
+            });
+        {% endfor %}
+    });
+
+    // Session-based storage
+    const sessionKey = 'play-marks-{{ request.path }}';
+
+    // Load played status from session storage
+    document.addEventListener('DOMContentLoaded', function() {
+        const playMarks = JSON.parse(sessionStorage.getItem(sessionKey) || '{}');
+
+        {% for song in songs %}
+            if (playMarks['{{ song.id }}']) {
+                document.getElementById('song-{{ song.id }}').classList.add('played');
+                document.getElementById('checkbox-{{ song.id }}').checked = true;
+            }
+        {% endfor %}
+    });
+
+    // Toggle played status
+    function togglePlayed(songId) {
+        const songElement = document.getElementById('song-' + songId);
+        const checkbox = document.getElementById('checkbox-' + songId);
+        const isPlayed = songElement.classList.toggle('played');
+        checkbox.checked = isPlayed;
+
+        const playMarks = JSON.parse(sessionStorage.getItem(sessionKey) || {});
+        playMarks[songId] = isPlayed;
+        sessionStorage.setItem(sessionKey, JSON.stringify(playMarks));
+    }
+
+    // Clear all played status
+    function clearAllPlayed() {
+        {% for song in songs %}
+            document.getElementById('song-{{ song.id }}').classList.remove('played');
+            document.getElementById('checkbox-{{ song.id }}').checked = false;
+        {% endfor %}
+        sessionStorage.removeItem(sessionKey);
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>音乐库搜索</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .search-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+        .search-box {
+            padding: 10px 15px;
+            width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 16px;
+            outline: none;
+        }
+        .artist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .artist-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            text-align: center;
+            padding: 10px;
+            transition: all 0.2s;
+            text-decoration: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .artist-button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .pinyin-section {
+            margin-top: 30px;
+        }
+        .pinyin-header {
+            color: #7f8c8d;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .no-artists {
+            text-align: center;
+            color: #7f8c8d;
+            margin-top: 40px;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>音乐库</h1>
+        <p>按拼音搜索歌手</p>
+    </div>
+
+    <div class="search-container">
+        <input type="text"
+               id="searchInput"
+               class="search-box"
+               placeholder="输入歌手名称..."
+               onkeyup="filterArtists()">
+    </div>
+
+    <div id="artistContainer">
+        {% if artists %}
+            {# Create a dictionary to group artists by their full Pinyin #}
+            {% set pinyin_dict = {} %}
+            {% for artist in artists %}
+                {% set full_pinyin = artist|pinyin|join('')|lower %}
+                {% set initial = full_pinyin[0].upper() if full_pinyin else '#' %}
+                {% if initial not in pinyin_dict %}
+                    {% set _ = pinyin_dict.update({initial: []}) %}
+                {% endif %}
+                {% set _ = pinyin_dict[initial].append((full_pinyin, artist)) %}
+            {% endfor %}
+
+            {# Sort each group by full Pinyin #}
+            {% for initial in pinyin_dict.keys()|sort %}
+                <div class="pinyin-section">
+                    <div class="pinyin-header">{{ initial }}</div>
+                    <div class="artist-grid">
+                        {% for pinyin, artist in pinyin_dict[initial]|sort(attribute='0') %}
+                            <a href="/songs?artist={{ artist }}" class="artist-button">{{ artist }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-artists">
+                <p>没有可用的歌手数据</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function filterArtists() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toUpperCase();
+            const container = document.getElementById('artistContainer');
+            const buttons = container.getElementsByClassName('artist-button');
+
+            for (let i = 0; i < buttons.length; i++) {
+                const artist = buttons[i].textContent || buttons[i].innerText;
+                if (artist.toUpperCase().indexOf(filter) > -1) {
+                    buttons[i].style.display = "";
+                } else {
+                    buttons[i].style.display = "none";
+                }
+            }
+
+            // Hide empty pinyin sections
+            const sections = container.getElementsByClassName('pinyin-section');
+            for (let i = 0; i < sections.length; i++) {
+                const artistGrid = sections[i].getElementsByClassName('artist-grid')[0];
+                const visibleButtons = artistGrid.querySelectorAll('.artist-button:not([style*="display: none"])');
+                if (visibleButtons.length === 0) {
+                    sections[i].style.display = "none";
+                } else {
+                    sections[i].style.display = "";
+                }
+            }
+        }
+    </script>
+</body>
+</html>

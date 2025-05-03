@@ -1,0 +1,14 @@
+# Ignore ffmpeg
+/ffmpeg/
+
+# Byte-compiled files
+/__pycache__/
+
+# Ignore others
+database_backup*
+getMP3.py
+update_lyrics_from_LRICLIB.py
+/mp3/
+
+# IDE files
+/.idea/
