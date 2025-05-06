@@ -45,6 +45,17 @@
             margin-left: 10px;
             cursor: pointer;
         }
+        .play-all-button {
+            padding: 5px 12px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            text-decoration: none;
+            font-size: 0.9em;
+            margin-left: 10px;
+            cursor: pointer;
+        }
         .songs-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -153,6 +164,8 @@
         <div>
             <a href="/" class="back-button">← 返回搜索</a>
             <button class="clear-button" onclick="clearAllPlayed()">清除标记</button>
+            <!-- NEW BUTTON ADDED HERE -->
+            <button class="play-all-button" onclick="playAllSongs()">自动播放全部</button>
         </div>
     </div>
 
@@ -173,7 +186,7 @@
                 <h2 class="group-title">{{ group_name }}</h2>
                 <div class="group-songs">
                     {% for song in group_songs %}
-                    <div class="song" id="song-{{ song.id }}">
+                    <div class="song" id="song-{{ song.id }}"{% if not song.valid %}data-invalid="true"{% endif %}>
                         <div class="song-header" onclick="togglePlayed({{ song.id }})">
                             <h2 class="song-title">{{ song.title }}</h2>
                             <input type="checkbox"
@@ -221,6 +234,7 @@
                 // Pause any currently playing audio
                 if (currentlyPlayingAudio && currentlyPlayingAudio !== this) {
                     currentlyPlayingAudio.pause();
+                    currentlyPlayingAudio.currentTime = 0; // NEW LINE: Reset progress
                 }
                 // Set this as the currently playing audio
                 currentlyPlayingAudio = this;
@@ -242,6 +256,68 @@
             }
         {% endfor %}
     });
+
+    function playAllSongs() {
+        // Get all valid song containers (excluding those marked as invalid)
+        const validSongs = Array.from(document.querySelectorAll('.song:not([data-invalid="true"])'))
+            .map(song => {
+                const audioId = song.id.replace('song-', 'audio-');
+                return {
+                    container: song,
+                    audio: document.getElementById(audioId)
+                };
+            });
+
+        if (validSongs.length === 0) {
+            alert('No valid songs available to play');
+            return;
+        }
+
+        let currentIndex = 0;
+        let isPlaying = false;
+
+        function playNext() {
+            if (currentIndex >= validSongs.length || isPlaying) return;
+
+            const currentSong = validSongs[currentIndex];
+            const { audio } = currentSong;
+
+            // Verify audio is ready to play
+            if (!audio || audio.readyState === 0) {
+                console.warn('Skipping unready audio:', currentSong.container.id);
+                currentIndex++;
+                playNext();
+                return;
+            }
+
+            // Reset all other audio elements
+            validSongs.forEach(song => {
+                if (song.audio !== audio) {
+                    song.audio.pause();
+                    song.audio.currentTime = 0;
+                }
+            });
+
+            isPlaying = true;
+
+            audio.play()
+                .then(() => {
+                    audio.onended = () => {
+                        isPlaying = false;
+                        currentIndex++;
+                        playNext();
+                    };
+                })
+                .catch(error => {
+                    console.error('Playback failed:', error);
+                    isPlaying = false;
+                    currentIndex++;
+                    playNext();
+                });
+        }
+
+        playNext();
+    }
 
     // Toggle played status
     function togglePlayed(songId) {

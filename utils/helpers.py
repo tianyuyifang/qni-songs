@@ -34,7 +34,8 @@ def load_song_data():
                 'artist': artist,
                 'audio_file': audio_file,
                 'lyrics': lyrics,
-                'type': row['Type']
+                'type': row['Type'],
+                'valid': row['Valid']
             }
             songs.append(song)
     return songs
