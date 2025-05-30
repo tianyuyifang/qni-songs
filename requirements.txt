@@ -6,4 +6,3 @@ pypinyin==0.54.0
 Requests==2.32.3
 yt_dlp==2025.4.30
 gunicorn==23.0.0
-Werkzeug==2.2.2
