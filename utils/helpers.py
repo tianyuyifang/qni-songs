@@ -3,6 +3,7 @@
 from .config import SONG_DATABASE_PATH, SORTED_SONG_DATABASE_PATH
 import pandas as pd
 from pypinyin import pinyin, Style
+import math
 from openpyxl import load_workbook
 
 
@@ -28,6 +29,10 @@ def load_song_data():
         for index, row in df.iterrows():
             audio_file = row['File'] + ".mp3" if type(row['File']) == str else ""
             lyrics = row['Lyrics'] if type(row['Lyrics']) == str else ""
+            speed = 1
+            if 'Speed' in df.columns:
+                if type(row['Speed']) == float and not math.isnan(row['Speed']):
+                    speed = row['Speed']
             song = {
                 'id': index,
                 'title': row['Song'],
@@ -35,7 +40,8 @@ def load_song_data():
                 'audio_file': audio_file,
                 'lyrics': lyrics,
                 'type': row['Type'],
-                'valid': row['Valid']
+                'valid': row['Valid'],
+                'speed': speed,
             }
             songs.append(song)
     return songs
