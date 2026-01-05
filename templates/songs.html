@@ -227,7 +227,7 @@
         {% for song in songs %}
             // Volume control
             const audio{{ song.id }} = document.getElementById("audio-{{ song.id }}");
-            audio{{ song.id }}.volume = 0.08; // 10% volume
+            audio{{ song.id }}.volume = 0.15; // 10% volume
             audio{{ song.id }}.playbackRate = {{ song.speed }};
 
             // Play/pause control

@@ -25,6 +25,9 @@ def load_song_data():
     songs = []
     for artist, df in all_sheets_dict.items():
         # Remove completely empty rows
+        # artistList = ["A-Lin", "阿肆", "陈粒", "蔡健雅", "陈奕迅", "薛之谦", "凤凰传奇", "林宥嘉"]
+        # if artist not in artistList:
+        #     continue
         df = df.dropna(how="all")
         for index, row in df.iterrows():
             audio_file = row['File'] + ".mp3" if type(row['File']) == str else ""
